@@ -9,11 +9,11 @@ part 'shipping_cost_cubit.freezed.dart';
 class ShippingCostCubit extends Cubit<ShippingCostState> {
   final CheckoutRemoteResource checkoutRemoteResource;
   ShippingCostCubit(this.checkoutRemoteResource)
-      : super(ShippingCostState.initial());
+      : super(const ShippingCostState.initial());
 
   Future<void> getShippingCost(
       int destination, int weight, String courier) async {
-    emit(ShippingCostState.loading());
+    emit(const ShippingCostState.loading());
     final result = await checkoutRemoteResource.getShippingCost(
       destination,
       weight,
@@ -26,6 +26,6 @@ class ShippingCostCubit extends Cubit<ShippingCostState> {
   }
 
   void resetShippingCost() {
-    emit(ShippingCostState.initial());
+    emit(const ShippingCostState.initial());
   }
 }

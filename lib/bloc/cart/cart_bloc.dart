@@ -9,11 +9,11 @@ part 'cart_bloc.freezed.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
   final CartRemoteResource cartRemoteResource;
-  CartBloc(this.cartRemoteResource) : super(_Initial()) {
+  CartBloc(this.cartRemoteResource) : super(const _Initial()) {
     on<CartEvent>((event, emit) async {
       await event.when(
         fetchCart: () async {
-          emit(CartState.loading());
+          emit(const CartState.loading());
           final result = await cartRemoteResource.fetchCart();
           result.fold(
             (error) => emit(CartState.error(error)),
@@ -21,7 +21,11 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           );
         },
         addCart: (productId, qty) async {
-          emit(CartState.loading());
+          if (qty <= 0) {
+            emit(const CartState.error('Quantity minimal 1'));
+            return;
+          }
+          emit(const CartState.loading());
           final result = await cartRemoteResource.cartStore(productId, qty);
           result.fold(
             (error) => emit(CartState.error(error)),

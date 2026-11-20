@@ -27,7 +27,6 @@ class _ProductCardState extends State<ProductCard> {
         : _buildProductCardNew(widget.product);
   }
 
-  /// Widget untuk Card Product New
   Widget _buildProductCardNew(ProductModel product) {
     return Card(
       elevation: 1,
@@ -55,7 +54,6 @@ class _ProductCardState extends State<ProductCard> {
                         '${AppConfig.STORAGE_IMAGE}${product.image}',
                         fit: BoxFit.cover,
                         width: 150,
-                        // supaya gambar bisa tampil di Chrome (tanpa izin CORS)
                         webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                         errorBuilder: (_, __, ___) => const SizedBox(
                           width: 150,
@@ -105,7 +103,6 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  /// Widget untuk Card Product Popular
   Widget _buildProductCardPopular(ProductModel product) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -134,7 +131,6 @@ class _ProductCardState extends State<ProductCard> {
                         '${AppConfig.STORAGE_IMAGE}${product.image}',
                         fit: BoxFit.cover,
                         width: double.infinity,
-                        // supaya gambar bisa tampil di Chrome (tanpa izin CORS)
                         webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                         errorBuilder: (_, __, ___) => const SizedBox(
                           width: double.infinity,
@@ -183,13 +179,14 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  /// Tombol Add to Cart
   Widget _addToCartButton(ProductModel product) {
     return IconButton.filledTonal(
       onPressed: () {
+        final productId = product.id;
+        if (productId == null) return;
         context
             .read<CartBloc>()
-            .add(CartEvent.addCart(productId: product.id ?? 0, qty: 1));
+            .add(CartEvent.addCart(productId: productId, qty: 1));
       },
       icon: const Icon(
         Icons.add_shopping_cart_rounded,
@@ -198,7 +195,6 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  /// Navigasi ke Detail Product
   void _navigateToDetailProduct(ProductModel product) {
     context.push('/detailProduct/${product.slug}');
   }

@@ -69,10 +69,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   void _validateForm() {
-    final valid = addressController.text.isNotEmpty &&
-        locationController.text.isNotEmpty &&
+    final valid = addressController.text.trim().isNotEmpty &&
+        locationController.text.trim().isNotEmpty &&
         selectedShipping != null &&
         selectedShipping!.isNotEmpty &&
+        shippingCostModel != null &&
         selectShippingCost != null &&
         selectShippingCost! > 0 &&
         selectLocation != null;
@@ -84,80 +85,77 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Builder(builder: (context) {
-      return Scaffold(
-        appBar: _appBar(),
-        body: SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: Form(
-            key: _formKey,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                spacing: 16.0,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSection(
-                    title: 'Shipping Information',
-                    icon: Icons.location_on_outlined,
-                    child: Column(
-                      spacing: 16.0,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLocation(),
-                        _buildAddressField(),
-                      ],
-                    ),
+    return Scaffold(
+      appBar: _appBar(),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: Form(
+          key: _formKey,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              spacing: 16.0,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSection(
+                  title: 'Shipping Information',
+                  icon: Icons.location_on_outlined,
+                  child: Column(
+                    spacing: 16.0,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLocation(),
+                      _buildAddressField(),
+                    ],
                   ),
-                  _buildSection(
-                    title: 'Select Shipping Method',
-                    icon: Icons.local_shipping_outlined,
-                    child: Column(
-                      spacing: 16.0,
-                      children: [
-                        _buildShippingMethodDropdown(),
-                        _buildShippingCost(),
-                      ],
-                    ),
+                ),
+                _buildSection(
+                  title: 'Select Shipping Method',
+                  icon: Icons.local_shipping_outlined,
+                  child: Column(
+                    spacing: 16.0,
+                    children: [
+                      _buildShippingMethodDropdown(),
+                      _buildShippingCost(),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-        bottomNavigationBar: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          color: Colors.white,
-          child: Column(
-            spacing: 8.0,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildPriceRow(
-                  title: 'Total Items:',
-                  fontSize: 16.0,
-                  price: widget.totalPrice),
-              _buildPriceRow(
-                  title: 'Shipping Cost:',
-                  fontSize: 16.0,
-                  price: selectShippingCost ?? 0),
-              Divider(
-                thickness: 2,
-                color: Colors.grey[300],
-              ),
-              _buildPriceRow(
-                  title: 'Grand Total:',
-                  fontSize: 18.0,
-                  price: totalItems + (selectShippingCost ?? 0),
-                  isBold: true),
-              _buildButtonPay(context),
-            ],
-          ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        color: Colors.white,
+        child: Column(
+          spacing: 8.0,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPriceRow(
+                title: 'Total Items:',
+                fontSize: 16.0,
+                price: widget.totalPrice),
+            _buildPriceRow(
+                title: 'Shipping Cost:',
+                fontSize: 16.0,
+                price: selectShippingCost ?? 0),
+            Divider(
+              thickness: 2,
+              color: Colors.grey[300],
+            ),
+            _buildPriceRow(
+                title: 'Grand Total:',
+                fontSize: 18.0,
+                price: totalItems + (selectShippingCost ?? 0),
+                isBold: true),
+            _buildButtonPay(context),
+          ],
         ),
-      );
-    });
+      ),
+    );
   }
 
-  //appBar
   PreferredSizeWidget _appBar() {
     return AppBar(
       backgroundColor: Theme.of(context).colorScheme.primary,
@@ -262,7 +260,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  /// Mencari lokasi dari kata yang diketik
   void _searchLocation() {
     if (locationController.text.isEmpty) {
       _messageEror('Please Select Location');
@@ -285,7 +282,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 setState(() {
                   locationController.text = location.label.toString();
                   selectLocation = location;
-                  // kota diganti, jadi ongkir lama tidak berlaku lagi
                   selectedShipping = null;
                   selectShippingCost = 0;
                   shippingCostModel = null;
@@ -326,7 +322,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
         ),
       ),
-      initialValue: selectedShipping,
+      value: selectedShipping,
       items: shippingMethods
           .map((method) => DropdownMenuItem(value: method, child: Text(method)))
           .toList(),
@@ -335,17 +331,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ? 'Please Select Shipping Method'
           : null,
       onChanged: (value) {
-        selectShippingCost = null;
         if (selectLocation == null) {
           _messageEror('Please Select Location');
           return;
         }
+        setState(() {
+          selectedShipping = value;
+          selectShippingCost = 0;
+          shippingCostModel = null;
+        });
         context.read<ShippingCostCubit>().getShippingCost(
               selectLocation?.id ?? 0,
               widget.totalWeight,
               value?.toLowerCase() ?? '',
             );
-        setState(() => selectedShipping = value);
         _validateForm();
       },
     );
@@ -368,14 +367,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 final option = shippingCost[index];
                 return RadioListTile<ShippingCostModel>(
                   title: Text(
-                      "${option.description} - ${CurrencyHelper.formatRupiah(option.cost?.toDouble() ?? 0)}"),
-                  subtitle: Text("Estimasi: ${option.etd} hari"),
+                      "${option.description ?? '-'} - ${CurrencyHelper.formatRupiah(option.cost?.toDouble() ?? 0)}"),
+                  subtitle: Text("Estimasi: ${option.etd ?? '-'} hari"),
                   value: option,
                   groupValue: shippingCostModel,
                   onChanged: (value) {
                     setState(() {
+                      shippingCostModel = value;
                       selectShippingCost = value?.cost ?? 0;
-                      shippingCostModel = option;
                     });
                     _validateForm();
                   },
@@ -417,8 +416,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
       listener: (context, state) {
         state.maybeWhen(
           success: (snapToken) async {
+            if (snapToken.trim().isEmpty) {
+              _messageEror('Snap token kosong');
+              return;
+            }
             await context.push('/midtransPayment/$snapToken');
-            // setelah pembayaran (berhasil atau tidak), buka detail pesanan
             if (context.mounted) {
               _navigateToDetailOrder(snapToken);
             }
@@ -444,7 +446,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       districtName: selectLocation?.districtName ?? "",
                       subdistrictName: selectLocation?.subdistrictName ?? "",
                       zipCode: selectLocation?.zipCode ?? "",
-                      fullAddress: addressController.text,
+                      fullAddress: addressController.text.trim(),
                       weight: widget.totalWeight,
                       shippingCourier: selectedShipping?.toLowerCase() ?? "",
                       shippingService:
@@ -457,6 +459,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 }
               : null,
           style: FilledButton.styleFrom(
+            backgroundColor: Colors.deepOrange,
+            disabledBackgroundColor: Colors.grey.shade300,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

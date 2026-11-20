@@ -39,13 +39,20 @@ class OrderModel {
     this.customer,
   });
 
-  /// Mengubah nilai apa pun (angka atau teks seperti "69900.00") menjadi int
   static int? _toInt(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value.toString()) ??
         double.tryParse(value.toString())?.toInt();
+  }
+
+  static List<OrderModel> fromList(dynamic raw) {
+    if (raw is! List) return [];
+    return raw
+        .whereType()
+        .map((item) => OrderModel.fromMap(Map<String, dynamic>.from(item)))
+        .toList();
   }
 
   factory OrderModel.fromJson(String str) =>
@@ -56,26 +63,28 @@ class OrderModel {
   factory OrderModel.fromMap(Map<String, dynamic> json) => OrderModel(
         id: _toInt(json["id"]),
         customerId: _toInt(json["customer_id"]),
-        provinceName: json["province_name"],
-        cityName: json["city_name"],
-        districtName: json["district_name"],
-        subdistrictName: json["subdistrict_name"],
+        provinceName: json["province_name"]?.toString(),
+        cityName: json["city_name"]?.toString(),
+        districtName: json["district_name"]?.toString(),
+        subdistrictName: json["subdistrict_name"]?.toString(),
         zipCode: _toInt(json["zip_code"]),
-        fullAddress: json["full_address"],
-        invoice: json["invoice"],
+        fullAddress: json["full_address"]?.toString(),
+        invoice: json["invoice"]?.toString(),
         weight: _toInt(json["weight"]),
         total: _toInt(json["total"]),
-        status: json["status"],
-        snapToken: json["snap_token"],
+        status: json["status"]?.toString(),
+        snapToken: json["snap_token"]?.toString(),
         createdAt: json["created_at"] == null
             ? null
-            : DateTime.parse(json["created_at"]),
+            : DateTime.tryParse(json["created_at"].toString()),
         updatedAt: json["updated_at"] == null
             ? null
-            : DateTime.parse(json["updated_at"]),
-        customer: json["customer"] == null
-            ? null
-            : CustomerModel.fromMap(json["customer"]),
+            : DateTime.tryParse(json["updated_at"].toString()),
+        customer: json["customer"] is Map
+            ? CustomerModel.fromMap(
+                Map<String, dynamic>.from(json["customer"] as Map),
+              )
+            : null,
       );
 
   Map<String, dynamic> toMap() => {
@@ -94,6 +103,6 @@ class OrderModel {
         "snap_token": snapToken,
         "created_at": createdAt?.toIso8601String(),
         "updated_at": updatedAt?.toIso8601String(),
-        "customer": customer?.toMap()
+        "customer": customer?.toMap(),
       };
 }

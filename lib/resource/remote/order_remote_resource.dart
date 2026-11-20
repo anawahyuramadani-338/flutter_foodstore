@@ -8,20 +8,46 @@ class OrderRemoteResource {
 
   OrderRemoteResource(this._dio);
 
-  Future<Either<String, PagingModel>> fetchOrders({int page = 0}) async {
+  Future<Either<String, PagingModel>> fetchOrders({int page = 1}) async {
     try {
       final response = await _dio.get('customer/my-orders?page=$page');
-      final result =
-          PagingModel.fromMap(response.data['data'], OrderModel.fromMap);
-      return Right(result);
+      final rawData =
+          response.data is Map ? response.data['data'] : response.data;
+
+      if (rawData is List) {
+        final orders = OrderModel.fromList(rawData);
+        return Right(
+          PagingModel(
+            data: orders,
+            nextPageUrl: null,
+          ),
+        );
+      }
+
+      if (rawData is Map) {
+        final result = PagingModel.fromMap(
+          Map<String, dynamic>.from(rawData),
+          OrderModel.fromMap,
+        );
+        return Right(result);
+      }
+
+      return Right(
+        PagingModel(
+          data: <OrderModel>[],
+          nextPageUrl: null,
+        ),
+      );
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         return Left(e.response?.statusCode.toString() ?? '');
       } else {
-        return Left(e.toString());
+        final message = e.response?.data is Map
+            ? e.response?.data['message']?.toString()
+            : null;
+        return Left(message ?? e.toString());
       }
     } catch (e) {
-      // menangkap error pembacaan data (misalnya tipe data tidak cocok)
       return Left(e.toString());
     }
   }
@@ -34,7 +60,10 @@ class OrderRemoteResource {
       if (e.response?.statusCode == 401) {
         return Left(e.response?.statusCode.toString() ?? '');
       } else {
-        return Left(e.toString());
+        final message = e.response?.data is Map
+            ? e.response?.data['message']?.toString()
+            : null;
+        return Left(message ?? e.toString());
       }
     } catch (e) {
       return Left(e.toString());
@@ -54,12 +83,17 @@ class OrderRemoteResource {
           'transaction_detail_id': transactionDetailId,
           'product_id': productId,
           'rating': rating,
-          'review': review
+          'review': review,
         },
       );
-      return Right(response.data['message']);
+      return Right(response.data['message']?.toString() ?? '');
     } on DioException catch (e) {
-      return Left(e.response?.data['message']);
+      final message = e.response?.data is Map
+          ? e.response?.data['message']?.toString()
+          : null;
+      return Left(message ?? e.toString());
+    } catch (e) {
+      return Left(e.toString());
     }
   }
 }

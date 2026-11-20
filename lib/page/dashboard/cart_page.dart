@@ -29,7 +29,6 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  /// List Keranjang
   Widget _buildCartList() {
     return BlocConsumer<CartBloc, CartState>(
       listener: (context, state) {
@@ -67,7 +66,6 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  /// Bottom Navigation Bar
   Widget _buildBottomNavigation() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0, left: 16.0, right: 16.0),
@@ -87,7 +85,6 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  /// Widget Total Harga
   Widget _buildTotalPrice() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -108,12 +105,14 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  /// Tombol Checkout
   Widget _buildCheckoutButton() {
+    final bool canCheckout = totalPrice > 0;
+
     return FilledButton(
-      onPressed:
-          (totalPrice > 0 && totalWeight > 0) ? _navigateToCheckout : null,
+      onPressed: canCheckout ? _navigateToCheckout : null,
       style: FilledButton.styleFrom(
+        backgroundColor: Colors.deepOrange,
+        disabledBackgroundColor: Colors.grey.shade300,
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -131,12 +130,10 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  /// Navigasi ke Halaman Checkout
   void _navigateToCheckout() {
     context.push('/checkout?totalPrice=$totalPrice&totalWeight=$totalWeight');
   }
 
-  /// Widget Keranjang Kosong
   Widget _buildEmptyCart() {
     return const Center(
       child: Text(

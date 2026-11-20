@@ -19,14 +19,34 @@ class CartResponseModel {
 
   String toJson() => json.encode(toMap());
 
-  factory CartResponseModel.fromMap(Map<String, dynamic> json) =>
-      CartResponseModel(
-        totalWeight: toIntOrNull(json["total_weight"]),
-        totalPrice: toIntOrNull(json["total_price"]),
-        carts: json["carts"] == null
-            ? []
-            : List<Cart>.from(json["carts"]!.map((x) => Cart.fromMap(x))),
+  factory CartResponseModel.fromMap(dynamic json) {
+    if (json is List) {
+      final parsedCarts = json
+          .whereType()
+          .map((x) => Cart.fromMap(Map<String, dynamic>.from(x)))
+          .toList();
+      return CartResponseModel(
+        totalWeight: 0,
+        totalPrice: 0,
+        carts: parsedCarts,
       );
+    }
+
+    final map =
+        json is Map ? Map<String, dynamic>.from(json) : <String, dynamic>{};
+    final rawCarts = map["carts"];
+
+    return CartResponseModel(
+      totalWeight: toIntOrNull(map["total_weight"]),
+      totalPrice: toIntOrNull(map["total_price"]),
+      carts: rawCarts is List
+          ? rawCarts
+              .whereType()
+              .map((x) => Cart.fromMap(Map<String, dynamic>.from(x)))
+              .toList()
+          : [],
+    );
+  }
 
   Map<String, dynamic> toMap() => {
         "total_weight": totalWeight,
@@ -67,13 +87,15 @@ class Cart {
         qty: toIntOrNull(json["qty"]),
         createdAt: json["created_at"] == null
             ? null
-            : DateTime.parse(json["created_at"]),
+            : DateTime.tryParse(json["created_at"].toString()),
         updatedAt: json["updated_at"] == null
             ? null
-            : DateTime.parse(json["updated_at"]),
-        product: json["product"] == null
-            ? null
-            : ProductModel.fromMap(json["product"]),
+            : DateTime.tryParse(json["updated_at"].toString()),
+        product: json["product"] is Map
+            ? ProductModel.fromMap(
+                Map<String, dynamic>.from(json["product"] as Map),
+              )
+            : null,
       );
 
   Map<String, dynamic> toMap() => {

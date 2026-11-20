@@ -7,8 +7,6 @@ class CartRemoteResource {
 
   CartRemoteResource(this._dio);
 
-  /// Mengubah error Dio menjadi pesan.
-  /// Kode 401 (belum login) dikembalikan sebagai teks '401'.
   String _errorMessage(DioException e) {
     if (e.response?.statusCode == 401) {
       return e.response?.statusCode.toString() ?? '';
@@ -22,8 +20,10 @@ class CartRemoteResource {
 
   Future<Either<String, CartResponseModel>> fetchCart() async {
     try {
-      final response = await _dio.get('public/carts');
-      final result = CartResponseModel.fromMap(response.data['data']);
+      final response = await _dio.get('customer/carts');
+      final rawData =
+          response.data is Map ? response.data['data'] : response.data;
+      final result = CartResponseModel.fromMap(rawData);
       return Right(result);
     } on DioException catch (e) {
       return Left(_errorMessage(e));
@@ -38,7 +38,7 @@ class CartRemoteResource {
   ) async {
     try {
       final response = await _dio.post(
-        'public/carts',
+        'customer/carts',
         data: {
           'product_id': productId.toString(),
           'qty': qty.toString(),
@@ -58,7 +58,7 @@ class CartRemoteResource {
   ) async {
     try {
       final response = await _dio.post(
-        'public/carts/increment',
+        'customer/carts/increment',
         data: {
           'product_id': productId.toString(),
           'cart_id': cartId.toString(),
@@ -78,7 +78,7 @@ class CartRemoteResource {
   ) async {
     try {
       final response = await _dio.post(
-        'public/carts/decrement',
+        'customer/carts/decrement',
         data: {
           'product_id': productId.toString(),
           'cart_id': cartId.toString(),
@@ -97,7 +97,7 @@ class CartRemoteResource {
   ) async {
     try {
       final response = await _dio.delete(
-        'public/carts/$cartId',
+        'customer/carts/$cartId',
       );
       return Right(response.data['message']?.toString() ?? '');
     } on DioException catch (e) {

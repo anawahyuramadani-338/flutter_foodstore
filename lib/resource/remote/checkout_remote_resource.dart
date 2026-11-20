@@ -9,13 +9,22 @@ class CheckoutRemoteResource {
 
   CheckoutRemoteResource(this._dio);
 
-  /// Mengambil pesan dari balasan server, kalau ada
   String _errorMessage(DioException e) {
     final data = e.response?.data;
-    if (data is Map && data['message'] != null) {
-      return data['message'].toString();
+    if (data is Map) {
+      final msg = data['message']?.toString() ?? '';
+      final err = data['error']?.toString() ?? '';
+      if (msg.isNotEmpty && err.isNotEmpty) {
+        return '$msg: $err';
+      }
+      if (err.isNotEmpty) {
+        return err;
+      }
+      if (msg.isNotEmpty) {
+        return msg;
+      }
     }
-    return e.toString();
+    return e.message ?? e.toString();
   }
 
   Future<Either<String, List<LocationModel>>> getLocation(
@@ -23,8 +32,15 @@ class CheckoutRemoteResource {
     try {
       final response =
           await _dio.get('public/search-destination?search=$search');
-      List<dynamic> data = response.data;
-      final result = data.map((e) => LocationModel.fromMap(e)).toList();
+      final rawData =
+          (response.data is Map && response.data['data'] != null)
+              ? response.data['data']
+              : response.data;
+      final List<dynamic> data = rawData is List ? rawData : [];
+      final result = data
+          .whereType()
+          .map((e) => LocationModel.fromMap(Map<String, dynamic>.from(e)))
+          .toList();
       return Right(result);
     } on DioException catch (e) {
       return Left(_errorMessage(e));
@@ -47,8 +63,7 @@ class CheckoutRemoteResource {
           'courier': courierName,
         },
       );
-      List<dynamic> data = response.data;
-      final result = data.map((e) => ShippingCostModel.fromMap(e)).toList();
+      final result = ShippingCostModel.fromOngkirResponse(response.data);
       return Right(result);
     } on DioException catch (e) {
       return Left(_errorMessage(e));
@@ -66,13 +81,35 @@ class CheckoutRemoteResource {
         'subdistrict_name': checkout.subdistrictName,
         'zip_code': checkout.zipCode,
         'full_address': checkout.fullAddress,
+        'address': checkout.fullAddress,
         'weight': checkout.weight,
         'shipping_courier': checkout.shippingCourier,
+        'courier': checkout.shippingCourier,
         'shipping_service': checkout.shippingService,
+        'courier_service': checkout.shippingService,
         'shipping_cost': checkout.shippingCost,
-        'total': checkout.total
+        'courier_cost': checkout.shippingCost,
+        'total': checkout.total,
+        'grand_total': checkout.total,
       });
-      return Right(response.data['data']['snap_token']);
+
+      String snapToken = '';
+      if (response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final dataObj = body['data'];
+        if (dataObj is Map) {
+          final dataMap = Map<String, dynamic>.from(dataObj);
+          snapToken = dataMap['snap_token']?.toString() ?? '';
+        } else if (body['snap_token'] != null) {
+          snapToken = body['snap_token'].toString();
+        }
+      }
+
+      if (snapToken.isEmpty) {
+        return const Left('Snap token kosong dari server.');
+      }
+
+      return Right(snapToken);
     } on DioException catch (e) {
       return Left(_errorMessage(e));
     } catch (e) {
